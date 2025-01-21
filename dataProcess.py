@@ -1,96 +1,130 @@
 from bs4 import BeautifulSoup
 import re
 
-# Carregar o conteúdo do arquivo HTML
-with open('OUTPUT_HTML_POR-TERMINAL.HTML', 'r', encoding='windows-1252') as file:
-    html_content = file.read()
+#Carregar o conteúdo HTML
+def getSoup(htmlFile:bytes) -> BeautifulSoup:
+    return BeautifulSoup(htmlFile,'html.parser')
 
-# Analisar o HTML com BeautifulSoup
-soup = BeautifulSoup(html_content, 'html.parser')
+#Identificar os terminais
+def getTerminals(soup:BeautifulSoup) -> list:
+    terminalTags = soup.find_all(string = re.compile(r'Terminal:\s*\d+'))
+    return list({
+        re.search(r'\d+',tag).group() 
+        for tag in terminalTags 
+        if re.search(r'\d+',tag)
+    })
 
-# Identificar os terminais
-terminal_tags = soup.find_all(string=re.compile(r'Terminal:\s*\d+'))
-terminais = list({re.search(r'\d+', tag).group() for tag in terminal_tags if re.search(r'\d+', tag)})
+#Venda bruta por terminal
+def grossSale(soup:BeautifulSoup) -> dict:
+    gsTags = soup.find_all(string=re.compile(r'Venda\s*bruta'))
+    return {
+        re.search(r'\d+', tag.find_previous(string=re.compile(r'Terminal:\s*\d+'))).group(): 
+        float(tag.find_next('div', {'class': 'font1'}).text.replace(',', '.'))
+        for tag in gsTags
+    }
 
-# Venda bruta por terminal
-venda_bruta_tags = soup.find_all(string=re.compile(r'Venda\s*bruta'))
-vendas_brutas = [
-    float(tag.find_next('div', {'class': 'font1'}).text.replace(',', '.'))
-    for tag in venda_bruta_tags
-]
+#Valor total das trocas
+def exchangedItems(soup:BeautifulSoup) -> float:
+    exchangedTags = soup.find_all(string=re.compile(r'Troca$'))
+    exchanged = [
+        float(tag.find_next('div', {'class': 'font1'}).text.replace(',', '.'))
+        for tag in exchangedTags
+        if re.match(r'\d+,\d+', tag.find_next('div', {'class': 'font1'}).text)
+    ]
+    return sum(exchanged)
 
-# Número de trocas
-troca_tags = soup.find_all(string=re.compile(r'Troca$'))
-trocas = [
-    float(tag.find_next('div', {'class': 'font1'}).text.replace(',', '.'))
-    for tag in troca_tags
-    if re.match(r'\d+,\d+', tag.find_next('div', {'class': 'font1'}).text)
-]
-soma_trocas = sum(trocas)
+#Valor do frete
+#Obs: Maldita string - (negativo). Linx, eu te odeio por não usar codificação de gente
+def shipping(soup:BeautifulSoup) -> float:
+    shippingTags = soup.find_all(string=re.compile(r'FRETE'))
+    shippingPrices = [
+        float(tag.find_next("div",{'class':'font1'}).text.replace('‑', '-').replace(',', '.'))
+        for tag in shippingTags
+    ]
+    return abs(sum(shippingPrices))
 
-# Valor do frete
-frete_tags = soup.find_all(string=re.compile(r'FRETE'))
-frete_valores = [
-    float(tag.find_next('div', {'class': 'font1'}).text.replace('‑', '-').replace(',', '.'))
-    for tag in frete_tags
-]
-frete_total = abs(sum(frete_valores))
+#Movimentações de caixa
+def cashMovement(soup:BeautifulSoup) -> dict:
+    movTags = soup.find_all(string=re.compile(r'Movimentação\s*de\s*caixa'))
+    movPositive,movNegative = [],[]
+    for tag in movTags:
+        price = float(tag.find_next('div',{'class':'font1'}).text.replace('−', '-').replace(',', '.'))
+        if price >= 0: movPositive.append(price)
+        else: movNegative.append(price)
+    movPositiveTotal = sum(movPositive)
+    movNegativeTotal = sum(movNegative)
+    return {"movPositive":movPositiveTotal,"movNegative":movNegativeTotal}
 
-# Movimentações de caixa
-mov_tags = soup.find_all(string=re.compile(r'Movimentação\s*de\s*caixa'))
-mov_positivas = []
-mov_negativas = []
-for tag in mov_tags:
-    valor = float(tag.find_next('div', {'class': 'font1'}).text.replace('−', '-').replace(',', '.'))
-    if valor >= 0:
-        mov_positivas.append(valor)
-    else:
-        mov_negativas.append(abs(valor))
+#Valor total do Omnichannel
+def omnichannel(soup:BeautifulSoup) -> float:
+    omniTags = soup.find_all(string=re.compile(r'OMNICHANNEL'))
+    omniValues = [
+        float(tag.find_next('div',{'class':'font1'}).text.replace(',', '.'))
+        for tag in omniTags
+    ]
+    return sum(omniValues)
 
-mov_positivas_total = sum(mov_positivas)
-mov_negativas_total = sum(mov_negativas)
+#Valores por tipo de pagamento
+def paymentMethods(soup:BeautifulSoup) -> dict:
+    paymentTags = soup.find_all(string=re.compile(r'CARTAO|DINHEIRO|QR'))
+    payments = {}
+    for tag in paymentTags:
+        payType = tag.strip()
+        value = float(tag.find_next('div',{'class':'font1'}).text.replace(',', '.'))
+        payments[payType] = payments.get(payType,0) + value
+    return payments
+    
+# Gerar relatório
+def genReport(htmlFile:BeautifulSoup) -> dict:
 
-# Valor total do Omnichannel
-omni_tags = soup.find_all(string=re.compile(r'OMNICHANNEL'))
-omni_valores = [
-    float(tag.find_next('div', {'class': 'font1'}).text.replace(',', '.'))
-    for tag in omni_tags
-]
-omni_total = sum(omni_valores)
+    soup = getSoup(htmlFile)
+    terminals = getTerminals(soup)
+    gross = grossSale(soup)
+    exchangedPrice = exchangedItems(soup)
+    shippingPrice = shipping(soup)
+    cashMove = cashMovement(soup)
+    omniPrice = omnichannel(soup)
+    paymentTypes = paymentMethods(soup)
+        
+    relatorio = f"""
+    Relatório de Terminais
+    =====================
+    Número de terminais: {len(terminals)}
 
-# Totais por tipo de pagamento
-pagamento_tags = soup.find_all(string=re.compile(r'CARTAO|DINHEIRO|QR'))
-pagamentos = {}
-for tag in pagamento_tags:
-    tipo = tag.strip()
-    valor = float(tag.find_next('div', {'class': 'font1'}).text.replace(',', '.'))
-    pagamentos[tipo] = pagamentos.get(tipo, 0) + valor
+    Venda bruta por terminal:
+    """
+    relatorio+="\n"
+    for terminal, venda in gross.items():
+        relatorio += f"- Terminal {terminal}: R$ {venda:.2f}\n"
 
-# Gerar o relatório
-relatorio = f"""
-Relatório de Terminais
-=====================
-Número de terminais: {len(terminais)}
+    relatorio += f"""
+    Número total de trocas: R$ {exchangedPrice:.2f}
 
-Venda bruta por terminal:
-"""
-for terminal, venda in zip(terminais, vendas_brutas):
-    relatorio += f"- Terminal {terminal}: R$ {venda:.2f}\n"
+    Frete total: R$ {shippingPrice:.2f}
 
-relatorio += f"""
-Número total de trocas: R$ {soma_trocas:.2f}
+    Movimentações de caixa:
+    - Positivas: R$ {cashMove["movPositive"]:.2f}
+    - Negativas: R$ {cashMove["movNegative"]:.2f}
 
-Frete total: R$ {frete_total:.2f}
+    Valor total do Omnichannel: R$ {omniPrice:.2f}
 
-Movimentações de caixa:
-- Positivas: R$ {mov_positivas_total:.2f}
-- Negativas: R$ {mov_negativas_total:.2f}
+    Totais por tipo de pagamento:
+    """
+    for tipo, valor in paymentTypes.items():
+        relatorio += f"- {tipo}: R$ {valor:.2f}\n"
 
-Valor total do Omnichannel: R$ {omni_total:.2f}
+    print(relatorio)
+    return {"Terminals":terminals,
+            "Gross_Sales":gross,
+            "Exchanged_Items":exchangedPrice,
+            "Shipping":shippingPrice,
+            "Cash_Movement":cashMove,
+            "Omnichannel":omniPrice,
+            "Payment_Methods":paymentTypes
+        }
 
-Totais por tipo de pagamento:
-"""
-for tipo, valor in pagamentos.items():
-    relatorio += f"- {tipo}: R$ {valor:.2f}\n"
-
-print(relatorio)
+# Função para gerar o relatório em formato JSON
+def genReportJson(htmlFile: bytes) -> str:
+    import json
+    report = genReport(htmlFile)
+    return json.dumps(report, indent=4, ensure_ascii=False)
