@@ -34,7 +34,7 @@ def exchangedItems(soup:BeautifulSoup) -> float:
     return sum(exchanged)
 
 #Valor do frete
-#Obs: Maldita string - (negativo). Linx, eu te odeio por não usar codificação de gente
+#Obs: Maldita string - (negativo/hífen). Linx, eu te odeio por não usar codificação de gente
 def shipping(soup:BeautifulSoup) -> float:
     shippingTags = soup.find_all(string=re.compile(r'FRETE'))
     shippingPrices = [
