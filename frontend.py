@@ -6,11 +6,11 @@ from io import BytesIO
  
 
 # Título do aplicativo
-st.title("Auto-fechamento")
 st.set_page_config(
     page_title="Auto-fechamento: Taco",
     page_icon="🌟",
 )
+st.title("Auto-fechamento")
 # Uploads de arquivos
 htmlFile = st.file_uploader("Faça o upload do arquivo HTML", type=["html"])
 xlsmFile = st.file_uploader("Faça o upload do arquivo XLSM", type=["xlsm"])
