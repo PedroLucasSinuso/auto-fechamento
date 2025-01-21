@@ -3,7 +3,7 @@ from datetime import date
 from dataProcess import genReport
 from dataWrite import sheetEdit
 from io import BytesIO
-
+ 
 # Título do aplicativo
 st.title("Auto-fechamento")
 
