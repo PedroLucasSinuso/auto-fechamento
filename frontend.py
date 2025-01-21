@@ -7,8 +7,7 @@ from io import BytesIO
 
 # Título do aplicativo
 st.set_page_config(
-    page_title="Auto-fechamento: Taco",
-    page_icon="🌟",
+    page_title="Auto-fechamento: Taco"
 )
 st.title("Auto-fechamento")
 # Uploads de arquivos
