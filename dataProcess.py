@@ -43,17 +43,24 @@ def shipping(soup:BeautifulSoup) -> float:
     ]
     return abs(sum(shippingPrices))
 
-#Movimentações de caixa
-def cashMovement(soup:BeautifulSoup) -> dict:
+# Função para somar todas as movimentações de caixa negativas e retornar o módulo da soma
+def expenses(soup: BeautifulSoup) -> float:
     movTags = soup.find_all(string=re.compile(r'Movimentação\s*de\s*caixa'))
-    movPositive,movNegative = [],[]
-    for tag in movTags:
-        price = float(tag.find_next('div',{'class':'font1'}).text.replace('−', '-').replace(',', '.'))
-        if price >= 0: movPositive.append(price)
-        else: movNegative.append(price)
-    movPositiveTotal = sum(movPositive)
-    movNegativeTotal = sum(movNegative)
-    return {"movPositive":movPositiveTotal,"movNegative":movNegativeTotal}
+    movNegative = [
+        float(tag.find_next('div', {'class': 'font1'}).text.replace('−', '-').replace(',', '.'))
+        for tag in movTags
+        if float(tag.find_next('div', {'class': 'font1'}).text.replace('−', '-').replace(',', '.')) < 0
+    ]
+    return abs(sum(movNegative))
+
+#Valor total do Credsystem
+def credsystem(soup:BeautifulSoup) -> float:
+    credyTags = soup.find_all(string=re.compile(r'CREDSYSTEM'))
+    credyValues = [
+        float(tag.find_next('div',{'class':'font1'}).text.replace(',', '.'))
+        for tag in credyTags
+    ]
+    return sum(credyValues)
 
 #Valor total do Omnichannel
 def omnichannel(soup:BeautifulSoup) -> float:
@@ -82,7 +89,8 @@ def genReport(htmlFile:BeautifulSoup) -> dict:
     gross = grossSale(soup)
     exchangedPrice = exchangedItems(soup)
     shippingPrice = shipping(soup)
-    cashMove = cashMovement(soup)
+    expensesPrice = expenses(soup)
+    credsystemPrice = credsystem(soup)
     omniPrice = omnichannel(soup)
     paymentTypes = paymentMethods(soup)
         
@@ -102,10 +110,6 @@ def genReport(htmlFile:BeautifulSoup) -> dict:
 
     Frete total: R$ {shippingPrice:.2f}
 
-    Movimentações de caixa:
-    - Positivas: R$ {cashMove["movPositive"]:.2f}
-    - Negativas: R$ {cashMove["movNegative"]:.2f}
-
     Valor total do Omnichannel: R$ {omniPrice:.2f}
 
     Totais por tipo de pagamento:
@@ -118,7 +122,8 @@ def genReport(htmlFile:BeautifulSoup) -> dict:
             "Gross_Sales":gross,
             "Exchanged_Items":exchangedPrice,
             "Shipping":shippingPrice,
-            "Cash_Movement":cashMove,
+            "Expenses":expensesPrice,
+            "Credsystem":credsystemPrice,
             "Omnichannel":omniPrice,
             "Payment_Methods":paymentTypes
         }

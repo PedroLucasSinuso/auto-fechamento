@@ -57,10 +57,10 @@ def sheetEdit(sheet, report, collect=False):
     if 'Exchanged_Items' in report: wsRelFechamento["B24"] = report['Exchanged_Items']
     # Inserir o valor total de frete na célula G23 se ele existir
     if 'Shipping' in report: wsRelFechamento["G23"] = report['Shipping']
-    # Inserir o valor total de movimentações positivas na célula G26 se ele existir
-    if 'movPositive' in report['Cash_Movement']: wsRelFechamento["G26"] = report['Cash_Movement']['movPositive']
-    # Inserir o valor total de movimentações negativas na célula G25 se ele existir
-    if 'movNegative' in report['Cash_Movement']: wsRelFechamento["G25"] = report['Cash_Movement']['movNegative']
+    # Inserir o valor total de expenses na célula G25 se ele existir
+    if 'Expenses' in report: wsRelFechamento["G25"] = report['Expenses']
+    # Inserir o valor total do Credsystem na célula G26 se ele existir
+    if 'Credsystem' in report: wsRelFechamento["G26"] = report['Credsystem']
     # Inserir o valor total do Omnichannel na célula G19 se ele existir
     if 'Omnichannel' in report: wsRelFechamento["G19"] = report['Omnichannel']
     #Ieserir o valor total de dinheiro na célula G13 se ele existir
