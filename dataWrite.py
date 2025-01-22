@@ -36,52 +36,42 @@ def startNewDay(sheet, collect=False):
 
     return wb
 
-# Função para editar a planilha "Rel. Fechamento de Caixa"
 def sheetEdit(sheet, report, collect=False):
     wb = startNewDay(sheet, collect)
     wsRelFechamento = wb["Rel. Fechamento de Caixa"]
 
-    # Inserir na célula B13 o valor do terminal 001 se ele existir
-    if '001' in report['Gross_Sales']: wsRelFechamento["B13"] = report['Gross_Sales']['001']
-    # Inserir na célula B14 o valor do terminal 002 se ele existir
-    if '002' in report['Gross_Sales']: wsRelFechamento["B14"] = report['Gross_Sales']['002']
-    # Inserir na célula B15 o valor do terminal 003 se ele existir
-    if '003' in report['Gross_Sales']: wsRelFechamento["B15"] = report['Gross_Sales']['003']
-    # Inserir na célula B16 o valor do terminal 004 se ele existir
-    if '004' in report['Gross_Sales']: wsRelFechamento["B16"] = report['Gross_Sales']['004']
-    # Inserir na célula B17 o valor do terminal 005 se ele existir
-    if '005' in report['Gross_Sales']: wsRelFechamento["B17"] = report['Gross_Sales']['005']
-    # Inserir na célula B18 o valor do terminal 006 se ele existir
-    if '006' in report['Gross_Sales']: wsRelFechamento["B18"] = report['Gross_Sales']['006']
-    # Inserir o valor total de trocas na célula B24 se ele existir
-    if 'Exchanged_Items' in report: wsRelFechamento["B24"] = report['Exchanged_Items']
-    # Inserir o valor total de frete na célula G23 se ele existir
-    if 'Shipping' in report: wsRelFechamento["G23"] = report['Shipping']
-    # Inserir o valor total de expenses na célula G25 se ele existir
-    if 'Expenses' in report: wsRelFechamento["G25"] = report['Expenses']
-    # Inserir o valor total do Credsystem na célula G26 se ele existir
-    if 'Credsystem' in report: wsRelFechamento["G26"] = report['Credsystem']
-    # Inserir o valor total do Omnichannel na célula G19 se ele existir
-    if 'Omnichannel' in report: wsRelFechamento["G19"] = report['Omnichannel']
-    #Ieserir o valor total de dinheiro na célula G13 se ele existir
-    if any(re.search(r'DINHEIRO', item) for item in report['Payment_Methods']): 
-        wsRelFechamento["G13"] = report['Payment_Methods'][next(item for item in report['Payment_Methods'] if re.search(r'DINHEIRO', item))]
-    # Inserir o valor de QR na célula G18 se ele existir
-    if any(re.search(r'QR', item) for item in report['Payment_Methods']):
-        wsRelFechamento["G18"] = report['Payment_Methods'][next(item for item in report['Payment_Methods'] if re.search(r'QR', item))]
-    # Inserir o valor de Cartão de Crédito PDV na célula G14 se ele existir
-    if any(re.search(r'CARTAO\s*CREDITO\s*PDV', item) for item in report['Payment_Methods']): 
-        wsRelFechamento["G14"] = report['Payment_Methods'][next(item for item in report['Payment_Methods'] if re.search(r'CARTAO\s*CREDITO\s*PDV', item))]
-    # Inserir o valor de Cartão de Débito PDV na célula G15 se ele existir
-    if any(re.search(r'CARTAO\s*DEBITO\s*PDV', item) for item in report['Payment_Methods']): 
-        wsRelFechamento["G15"] = report['Payment_Methods'][next(item for item in report['Payment_Methods'] if re.search(r'CARTAO\s*DEBITO\s*PDV', item))]
-    # Inserir o valor de Cartão de Crédito POS na célula G16 se ele existir
-    if any(re.search(r'CARTAO\s*CREDITO$', item) for item in report['Payment_Methods']): 
-        wsRelFechamento["G16"] = report['Payment_Methods'][next(item for item in report['Payment_Methods'] if re.search(r'CARTAO\s*CREDITO$', item))]
-    # Inserir o valor de Cartão de Débito POS na célula G17 se ele existir
-    if any(re.search(r'CARTAO\s*DEBITO$', item) for item in report['Payment_Methods']): 
-        wsRelFechamento["G17"] = report['Payment_Methods'][next(item for item in report['Payment_Methods'] if re.search(r'CARTAO\s*DEBITO$', item))]
-    
-    return wb
+    # Inserir valores de terminais (001-006) nas células B13-B18
+    for i in range(1, 7):
+        terminal_key = f"{i:03}"
+        cell = f"B{12 + i}"
+        if terminal_key in report['Gross_Sales']:
+            wsRelFechamento[cell] = report['Gross_Sales'][terminal_key]
 
+    # Mapear outras informações para células específicas
+    mappings = {
+        'Exchanged_Items': "B24",
+        'Shipping': "G23",
+        'Expenses': "G25",
+        'Credsystem': "G26",
+        'Omnichannel': "G19",
+    }
+    for key, cell in mappings.items():
+        if key in report:
+            wsRelFechamento[cell] = report[key]
+
+    # Inserir métodos de pagamento em células específicas
+    payment_mappings = {
+        r'DINHEIRO': "G13",
+        r'QR': "G18",
+        r'CARTAO\s*CREDITO\s*PDV': "G14",
+        r'CARTAO\s*DEBITO\s*PDV': "G15",
+        r'CARTAO\s*CREDITO$': "G16",
+        r'CARTAO\s*DEBITO$': "G17",
+    }
+    for pattern, cell in payment_mappings.items():
+        if any(re.search(pattern, item) for item in report['Payment_Methods']):
+            match_item = next(item for item in report['Payment_Methods'] if re.search(pattern, item))
+            wsRelFechamento[cell] = report['Payment_Methods'][match_item]
+
+    return wb
 

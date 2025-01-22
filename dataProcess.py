@@ -45,7 +45,7 @@ def shipping(soup:BeautifulSoup) -> float:
 
 # Função para somar todas as movimentações de caixa negativas e retornar o módulo da soma
 def expenses(soup: BeautifulSoup) -> float:
-    movTags = soup.find_all(string=re.compile(r'Movimentação\s*de\s*caixa'))
+    movTags = soup.find_all(string=re.compile(r'Movimentação\s*de\s*caixa\s*−'))
     movNegative = [
         float(tag.find_next('div', {'class': 'font1'}).text.replace('−', '-').replace(',', '.'))
         for tag in movTags
