@@ -7,7 +7,7 @@ def startNewDay(sheet, collect=False):
     wbDataOnly = load_workbook(sheet, data_only=True)
     wsSaldoCaixaDataOnly = wbDataOnly["Saldo em Caixa"]
 
-    # Carregando sheet com macros
+    # Carregar sheet com macros
     wb = load_workbook(sheet, keep_vba=True)
     wsSaldoCaixa = wb["Saldo em Caixa"]
     wsRelFechamento = wb["Rel. Fechamento de Caixa"]
@@ -16,11 +16,11 @@ def startNewDay(sheet, collect=False):
     wsSaldoCaixa.protection.disable()
     wsRelFechamento.protection.disable()
 
-    # Copiar valor de F29 para F12
+    # Subir dinheiro em espécie e credsystem
     wsSaldoCaixa["F12"] = wsSaldoCaixaDataOnly["F29"].value
     wsSaldoCaixa["F14"] = wsSaldoCaixaDataOnly["F30"].value
 
-    # Se tiver coleta
+    # Dia de coleta
     if collect:
         wsSaldoCaixa["F16"] = wsSaldoCaixaDataOnly["F29"].value
         wsSaldoCaixa["F18"] = wsSaldoCaixaDataOnly["F30"].value
@@ -50,7 +50,7 @@ def sheetEdit(sheet, report, collect=False):
     # Inserir valor de acréscimo total na célula B19
     wsRelFechamento["B19"] = report['Gross_Add']
 
-    # Inserir valor de descontos total na célula B25
+    # Inserir valor de desconto total na célula B25
     wsRelFechamento["B25"] = report['Discounts']
 
     # Mapear outras informações para células específicas
@@ -65,12 +65,6 @@ def sheetEdit(sheet, report, collect=False):
         if key in report:
             wsRelFechamento[cell] = report[key]
     
-    # Inserir omnichannel em célula específica
-    wsRelFechamento["G19"] = report['Omnichannel']
-
-    # Inserir frete em célula específica
-    wsRelFechamento["G23"] = report['Shipping']
-
     # Inserir métodos de pagamento em células específicas
     payment_mappings = {
         r'DINHEIRO': "G13",
