@@ -11,7 +11,7 @@ st.set_page_config(
 )
 st.title("Auto-fechamento")
 # Uploads de arquivos
-htmlFile = st.file_uploader("Faça o upload do arquivo HTML", type=["html"])
+wordFile = st.file_uploader("Faça o upload do arquivo Word", type=["doc"])
 xlsmFile = st.file_uploader("Faça o upload do arquivo XLSM", type=["xlsm"])
 
 xlsmFileDownload = None
@@ -21,10 +21,11 @@ collect = st.checkbox("Coleta", value=False)
 
 # Botão para gerar o relatório
 if st.button("Ok"):
-    reportDict = genReport(htmlFile)
+    # Gerar relatório
+    reportDict = genReport(wordFile)
     print(reportDict)
+    # Editar planilha
     xlsmFileDownload = sheetEdit(xlsmFile, reportDict, collect=True) if collect else sheetEdit(xlsmFile, reportDict, collect=False)
-    
     # Exibir resumo do relatório
     st.subheader("Resumo do Relatório")
     st.json(reportDict)
@@ -42,7 +43,7 @@ if xlsmFileDownload is not None:
     
     # Disponibilizando para download
     st.download_button(
-        label="Baixar arquivo com novo nome",
+        label="Baixar planilha de fechamento",
         data=file_content,
         file_name=new_filename,
         mime="application/vnd.ms-excel.sheet.macroEnabled.12"

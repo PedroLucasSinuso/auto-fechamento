@@ -1,135 +1,64 @@
-from bs4 import BeautifulSoup
+import aspose.words as aw
 import re
 
-#Carregar o conteúdo HTML
-def getSoup(htmlFile:bytes) -> BeautifulSoup:
-    return BeautifulSoup(htmlFile,'html.parser')
-
-#Identificar os terminais
-def getTerminals(soup:BeautifulSoup) -> list:
-    terminalTags = soup.find_all(string = re.compile(r'Terminal:\s*\d+'))
-    return list({
-        re.search(r'\d+',tag).group() 
-        for tag in terminalTags 
-        if re.search(r'\d+',tag)
-    })
-
-#Venda bruta por terminal
-def grossSale(soup:BeautifulSoup) -> dict:
-    gsTags = soup.find_all(string=re.compile(r'Venda\s*bruta'))
-    return {
-        re.search(r'\d+', tag.find_previous(string=re.compile(r'Terminal:\s*\d+'))).group(): 
-        float(tag.find_next('div', {'class': 'font1'}).text.replace(',', '.'))
-        for tag in gsTags
-    }
-
-#Valor total das trocas
-def exchangedItems(soup:BeautifulSoup) -> float:
-    exchangedTags = soup.find_all(string=re.compile(r'Troca$'))
-    exchanged = [
-        float(tag.find_next('div', {'class': 'font1'}).text.replace(',', '.'))
-        for tag in exchangedTags
-        if re.match(r'\d+,\d+', tag.find_next('div', {'class': 'font1'}).text)
-    ]
-    return sum(exchanged)
-
-#Valor do frete
-#Obs: Maldita string - (negativo/hífen). Linx, eu te odeio por não usar codificação de gente
-def shipping(soup:BeautifulSoup) -> float:
-    shippingTags = soup.find_all(string=re.compile(r'FRETE'))
-    shippingPrices = [
-        float(tag.find_next("div",{'class':'font1'}).text.replace('‑', '-').replace(',', '.'))
-        for tag in shippingTags
-    ]
-    return abs(sum(shippingPrices))
-
-# Função para somar todas as movimentações de caixa negativas e retornar o módulo da soma
-def expenses(soup: BeautifulSoup) -> float:
-    movTags = soup.find_all(string=re.compile(r'Movimentação\s*de\s*caixa\s*−'))
-    movNegative = [
-        float(tag.find_next('div', {'class': 'font1'}).text.replace('−', '-').replace(',', '.'))
-        for tag in movTags
-        if float(tag.find_next('div', {'class': 'font1'}).text.replace('−', '-').replace(',', '.')) < 0
-    ]
-    return abs(sum(movNegative))
-
-#Valor total do Credsystem
-def credsystem(soup:BeautifulSoup) -> float:
-    credyTags = soup.find_all(string=re.compile(r'CREDSYSTEM'))
-    credyValues = [
-        float(tag.find_next('div',{'class':'font1'}).text.replace(',', '.'))
-        for tag in credyTags
-    ]
-    return sum(credyValues)
-
-#Valor total do Omnichannel
-def omnichannel(soup:BeautifulSoup) -> float:
-    omniTags = soup.find_all(string=re.compile(r'OMNICHANNEL'))
-    omniValues = [
-        float(tag.find_next('div',{'class':'font1'}).text.replace(',', '.'))
-        for tag in omniTags
-    ]
-    return sum(omniValues)
-
-#Valores por tipo de pagamento
-def paymentMethods(soup:BeautifulSoup) -> dict:
-    paymentTags = soup.find_all(string=re.compile(r'CARTAO|DINHEIRO|QR'))
-    payments = {}
-    for tag in paymentTags:
-        payType = tag.strip()
-        value = float(tag.find_next('div',{'class':'font1'}).text.replace(',', '.'))
-        payments[payType] = payments.get(payType,0) + value
-    return payments
+def genReport(word_file) -> dict:
     
-# Gerar relatório
-def genReport(htmlFile:BeautifulSoup) -> dict:
-
-    soup = getSoup(htmlFile)
-    terminals = getTerminals(soup)
-    gross = grossSale(soup)
-    exchangedPrice = exchangedItems(soup)
-    shippingPrice = shipping(soup)
-    expensesPrice = expenses(soup)
-    credsystemPrice = credsystem(soup)
-    omniPrice = omnichannel(soup)
-    paymentTypes = paymentMethods(soup)
+    doc = aw.Document(word_file)
+    lines = [p.get_text().strip() for p in doc.get_child_nodes(aw.NodeType.PARAGRAPH, True) if p.get_text().strip()]
+    
+    report = {
+        'Terminals': [],
+        'Gross_Sales': {},
+        'Gross_Add': 0,
+        'Discounts': 0,
+        'Exchanged_Items': 0,
+        'Shipping': 0,
+        'Expenses': 0,
+        'Credsystem': 0,
+        'Omnichannel': 0,
+        'Payment_Methods': {}
+    }
+    for i, line in enumerate(lines):
         
-    relatorio = f"""
-    Relatório de Terminais
-    =====================
-    Número de terminais: {len(terminals)}
+        if re.search(r'Terminal', line):
+            # Inserir o número do terminal ao relatório se ele não existir
+            terminal = re.search(r'\d+', line).group()
+            if terminal not in report['Terminals']: 
+                report['Terminals'].append(terminal)
+                # Inserir venda bruta do terminal ao relatório
+                report['Gross_Sales'][terminal] = float(re.search(r'\d+,\d+', lines[i+2]).group().replace(',', '.'))
+                # Inserir trocas do terminal ao relatório
+                report['Exchanged_Items'] += float(re.search(r'\d+,\d+', lines[i+8]).group().replace(',', '.'))
+                # Inserir acréscimos do terminal ao relatório
+                report['Gross_Add'] += float(re.search(r'\d+,\d+', lines[i+4]).group().replace(',', '.'))
+                report['Gross_Add'] += float(re.search(r'\d+,\d+', lines[i+6]).group().replace(',', '.'))
+                # Inserir descontos do terminal ao relatório
+                report['Discounts'] -= float(re.search(r'\d+,\d+', lines[i+3]).group().replace(',', '.'))
+                report['Discounts'] -= float(re.search(r'\d+,\d+', lines[i+5]).group().replace(',', '.'))
+        
+        # Inserir acréscimos ao relatório se existir na linha
+        if re.search(r'Acréscimo', line): 
+            report['Gross_Add'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+        
+        
+        # Inserir frete ao relatório se existir na linha
+        if re.search(r'FRETE\s*B2C', line): 
+            report['Shipping'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
 
-    Venda bruta por terminal:
-    """
-    relatorio+="\n"
-    for terminal, venda in gross.items():
-        relatorio += f"- Terminal {terminal}: R$ {venda:.2f}\n"
-
-    relatorio += f"""
-    Número total de trocas: R$ {exchangedPrice:.2f}
-
-    Frete total: R$ {shippingPrice:.2f}
-
-    Valor total do Omnichannel: R$ {omniPrice:.2f}
-
-    Totais por tipo de pagamento:
-    """
-    for tipo, valor in paymentTypes.items():
-        relatorio += f"- {tipo}: R$ {valor:.2f}\n"
-
-    print(relatorio)
-    return {"Terminals":terminals,
-            "Gross_Sales":gross,
-            "Exchanged_Items":exchangedPrice,
-            "Shipping":shippingPrice,
-            "Expenses":expensesPrice,
-            "Credsystem":credsystemPrice,
-            "Omnichannel":omniPrice,
-            "Payment_Methods":paymentTypes
-        }
-
-# Função para gerar o relatório em formato JSON
-def genReportJson(htmlFile: bytes) -> str:
-    import json
-    report = genReport(htmlFile)
-    return json.dumps(report, indent=4, ensure_ascii=False)
+        # Inserir credsystem ao relatório se existir na linha
+        if re.search(r'Credsystem', line): 
+            report['Credsystem'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+        
+        # Inserir omnichannel ao relatório se existir na linha
+        if re.search(r'OMNICHANNEL', line): 
+            report['Omnichannel'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+        
+        # Identificar as linhas que contém métodos de pagamento e inserir ao relatório {"Método de pagamento":valor}
+        if re.search(r'DINHEIRO|QR|CARTAO\s*CREDITO\s*PDV|CARTAO\s*DEBITO\s*PDV|CARTAO\s*CREDITO$|CARTAO\s*DEBITO$', line):
+            payType = re.search(r'DINHEIRO|QR|CARTAO\s*CREDITO\s*PDV|CARTAO\s*DEBITO\s*PDV|CARTAO\s*CREDITO$|CARTAO\s*DEBITO$', line).group()
+            value = float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+            # Se pagamento for dinheiro, dividir por 2
+            if payType == 'DINHEIRO': value /= 2
+            report['Payment_Methods'][payType] = report['Payment_Methods'].get(payType,0) + value
+    
+    return report

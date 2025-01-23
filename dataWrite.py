@@ -47,6 +47,12 @@ def sheetEdit(sheet, report, collect=False):
         if terminal_key in report['Gross_Sales']:
             wsRelFechamento[cell] = report['Gross_Sales'][terminal_key]
 
+    # Inserir valor de acréscimo total na célula B19
+    wsRelFechamento["B19"] = report['Gross_Add']
+
+    # Inserir valor de descontos total na célula B25
+    wsRelFechamento["B25"] = report['Discounts']
+
     # Mapear outras informações para células específicas
     mappings = {
         'Exchanged_Items': "B24",
@@ -58,6 +64,12 @@ def sheetEdit(sheet, report, collect=False):
     for key, cell in mappings.items():
         if key in report:
             wsRelFechamento[cell] = report[key]
+    
+    # Inserir omnichannel em célula específica
+    wsRelFechamento["G19"] = report['Omnichannel']
+
+    # Inserir frete em célula específica
+    wsRelFechamento["G23"] = report['Shipping']
 
     # Inserir métodos de pagamento em células específicas
     payment_mappings = {
