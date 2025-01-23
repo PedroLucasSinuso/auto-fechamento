@@ -36,17 +36,13 @@ def genReport(word_file) -> dict:
                 report['Discounts'] -= float(re.search(r'\d+,\d+', lines[i+3]).group().replace(',', '.'))
                 report['Discounts'] -= float(re.search(r'\d+,\d+', lines[i+5]).group().replace(',', '.'))
         
-        # Inserir acréscimos ao relatório se existir na linha
-        if re.search(r'Acréscimo', line): 
-            report['Gross_Add'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
-        
         
         # Inserir frete ao relatório se existir na linha
         if re.search(r'FRETE\s*B2C', line): 
             report['Shipping'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
 
         # Inserir credsystem ao relatório se existir na linha
-        if re.search(r'Credsystem', line): 
+        if re.search(r'CREDSYSTEM', line): 
             report['Credsystem'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
         
         # Inserir omnichannel ao relatório se existir na linha
@@ -62,3 +58,6 @@ def genReport(word_file) -> dict:
             report['Payment_Methods'][payType] = report['Payment_Methods'].get(payType,0) + value
     
     return report
+
+if __name__ == "__main__":
+    print(genReport("output.doc"))
