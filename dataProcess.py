@@ -13,6 +13,8 @@ def genReport(word_file) -> dict:
         'Discounts': 0,
         'Exchanged_Items': 0,
         'Shipping': 0,
+        'Cash_Inflow': {},
+        'Cash_Outflow': {},
         'Expenses': 0,
         'Credsystem': 0,
         'Omnichannel': 0,
@@ -33,22 +35,21 @@ def genReport(word_file) -> dict:
                 report['Gross_Add'] += float(re.search(r'\d+,\d+', lines[i+4]).group().replace(',', '.'))
                 report['Gross_Add'] += float(re.search(r'\d+,\d+', lines[i+6]).group().replace(',', '.'))
                 # Inserir descontos do terminal ao relatório
-                report['Discounts'] -= float(re.search(r'\d+,\d+', lines[i+3]).group().replace(',', '.'))
-                report['Discounts'] -= float(re.search(r'\d+,\d+', lines[i+5]).group().replace(',', '.'))
-        
+                report['Discounts'] += float(re.search(r'\d+,\d+', lines[i+3]).group().replace(',', '.'))
+                report['Discounts'] += float(re.search(r'\d+,\d+', lines[i+5]).group().replace(',', '.'))
         
         # Inserir frete ao relatório se existir na linha
         if re.search(r'FRETE\s*B2C', line): 
             report['Shipping'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
 
-        # Inserir credsystem ao relatório se existir na linha
-        if re.search(r'CREDSYSTEM', line): 
-            report['Credsystem'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
-        
         # Inserir omnichannel ao relatório se existir na linha
         if re.search(r'OMNICHANNEL', line): 
             report['Omnichannel'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
         
+        # Inserir credsystem ao relatório se existir na linha
+        if re.search(r'CREDSYSTEM', line): 
+            report['Credsystem'] += float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+
         # Identificar as linhas que contém métodos de pagamento e inserir ao relatório {"Método de pagamento":valor}
         if re.search(r'DINHEIRO|QR|CARTAO\s*CREDITO\s*PDV|CARTAO\s*DEBITO\s*PDV|CARTAO\s*CREDITO$|CARTAO\s*DEBITO$', line):
             payType = re.search(r'DINHEIRO|QR|CARTAO\s*CREDITO\s*PDV|CARTAO\s*DEBITO\s*PDV|CARTAO\s*CREDITO$|CARTAO\s*DEBITO$', line).group()
@@ -56,6 +57,57 @@ def genReport(word_file) -> dict:
             # Se pagamento for dinheiro, dividir por 2
             if payType == 'DINHEIRO': value /= 2
             report['Payment_Methods'][payType] = report['Payment_Methods'].get(payType,0) + value
+
+        # Mapear entradas de caixa
+        cashInflow = [
+            "ENTRADA DE TROCO",
+            "ENTRADA FUNDO DE CAIXA",
+            "ENTRADA NO CAIXA",
+            "SALDO INICIAL",
+            "VENDA FRANQUIA"
+        ]
+
+        # Mapear saídas de caixa
+        cashOutflow = [
+            "BAINHAS E MATERIAL DE COSTURA",
+            "COLETA PROSEGUR",
+            "CRM BONUS",
+            "CÓPIAS/XEROX",
+            "DEPÓSITO DE TROCO",
+            "DESCONTO UNIFORME",
+            "DESP - BRINDES",
+            "DESP-OUTROS MAT. DE CONSU",
+            "DESPESA MATERIAL COPA",
+            "DESPESA NOTA FISCAL",
+            "DIFERENCA DE TROCA",
+            "ESTACIONAMENTO",
+            "HIGIENE E LIMPEZA",
+            "LANCHE",
+            "MANUTENÇÃO E REPAROS",
+            "MATERIAL ESCRITÓRIO E PAPELARIA",
+            "MEDICINA DO TRABALHO",
+            "PASSAGENS/CONDUÇÕES",
+            "PREMIAÇÃO CREDSYSTEM",
+            "PRÊMIOS E GRATIFICAÇÕES",
+            "RETIRADA DO CAIXA",
+            "SEGURANÇA E VIGILÂNCIA",
+            "SUPLEMENTO DE INFORMATICA",
+            "TREINAMENTO",
+            "UNIFORME",
+            "VIAGEM",
+            "VITRINE/MATERIAL DE VITRINE",
+            "ÁGUA"
+        ]
+        
+        # Inserir entradas de caixa ao relatório
+        for pattern in cashInflow:
+            if re.search(pattern, line):
+                report['Cash_Inflow'][pattern] = float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+        
+        # Inserir saídas de caixa ao relatório
+        for pattern in cashOutflow:
+            if re.search(pattern, line):
+                report['Cash_Outflow'][pattern] = float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
     
     return report
 
