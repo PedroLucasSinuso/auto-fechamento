@@ -2,7 +2,8 @@ from openpyxl import load_workbook
 import re
 
 # Função para iniciar um dia novo
-def startNewDay(sheet, collect=False):
+def startNewDay(sheet, day, collect=False):
+    
     # Carregando sheet data_only
     wbDataOnly = load_workbook(sheet, data_only=True)
     wsSaldoCaixaDataOnly = wbDataOnly["Saldo em Caixa"]
@@ -32,12 +33,15 @@ def startNewDay(sheet, collect=False):
     for cell_range in ["B13:B20", "B24:B25", "G13:G23", "G25:G26"]:
         for row in wsRelFechamento[cell_range]:
             for cell in row:
-                cell.value = 0
+                cell.value = None
+    # Atualizar a data das células
+    wsRelFechamento["B7"] = day.strftime('%d/%m/%Y')
+    wsSaldoCaixa["G7"] = day.strftime('%d/%m/%Y')
 
     return wb
 
-def sheetEdit(sheet, report, collect=False):
-    wb = startNewDay(sheet, collect)
+def sheetEdit(sheet, report, day, collect=False):
+    wb = startNewDay(sheet, day, collect)
     wsRelFechamento = wb["Rel. Fechamento de Caixa"]
 
     # Inserir valores de terminais (001-006) nas células B13-B18
@@ -60,6 +64,7 @@ def sheetEdit(sheet, report, collect=False):
         'Expenses': "G25",
         'Credsystem': "G26",
         'Omnichannel': "G19",
+        'Total_Cash_Outflow': "G25",
     }
     for key, cell in mappings.items():
         if key in report:

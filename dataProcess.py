@@ -15,6 +15,8 @@ def genReport(word_file) -> dict:
         'Shipping': 0,
         'Cash_Inflow': {},
         'Cash_Outflow': {},
+        'Total_Cash_Inflow': 0,
+        'Total_Cash_Outflow': 0,
         'Expenses': 0,
         'Credsystem': 0,
         'Omnichannel': 0,
@@ -102,12 +104,16 @@ def genReport(word_file) -> dict:
         # Inserir entradas de caixa ao relatório
         for pattern in cashInflow:
             if re.search(pattern, line):
-                report['Cash_Inflow'][pattern] = float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+                value = float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+                report['Cash_Inflow'][pattern] = value
+                report['Total_Cash_Inflow'] += value
         
         # Inserir saídas de caixa ao relatório
         for pattern in cashOutflow:
             if re.search(pattern, line):
-                report['Cash_Outflow'][pattern] = float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+                value = float(re.search(r'\d+,\d+', line).group().replace(',', '.'))
+                report['Cash_Outflow'][pattern] = value
+                report['Total_Cash_Outflow'] += value
     
     return report
 
