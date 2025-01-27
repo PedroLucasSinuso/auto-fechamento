@@ -22,3 +22,8 @@ Uma forma de automatizar o fechamento geral das lojas TACO, garantindo velocidad
     ```bash
     streamlit run frontend.py
     ```
+
+## Acessar o projeto online
+
+Você também pode acessar o projeto online através do seguinte link:
+[Auto-fechamento](https://auto-fechamento.streamlit.app)

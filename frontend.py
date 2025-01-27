@@ -78,31 +78,37 @@ with col3:
         if not wordFile or not xlsmFile:
             st.warning("Por favor, envie os arquivos Word e XLSM antes de gerar o relatório.")
         else:
-            # Gerar relatório
-            reportDict = genReport(wordFile)
+            try:
+                # Gerar relatório
+                reportDict = genReport(wordFile)
 
-            # Editar planilha
-            xlsmFileDownload = sheetEdit(xlsmFile, reportDict, today, collect)
-            
-            # Exibir resumo do relatório
-            display_report_summary(reportDict)
+                # Editar planilha
+                xlsmFileDownload = sheetEdit(xlsmFile, reportDict, today, collect)
+                
+                # Exibir resumo do relatório
+                display_report_summary(reportDict)
+            except Exception as e:
+                st.error(f"Erro ao gerar o relatório: {e}")
 
 with col4:
     if xlsmFileDownload is not None:
-        # Salvar o arquivo modificado em memória usando o BytesIO
-        output = BytesIO()
-        xlsmFileDownload.save(output)
-        output.seek(0)
-        file_content = output.read()
+        try:
+            # Salvar o arquivo modificado em memória usando o BytesIO
+            output = BytesIO()
+            xlsmFileDownload.save(output)
+            output.seek(0)
+            file_content = output.read()
 
-        # Renomeando o arquivo para download com a data atual do Brasil
-        new_filename = f"FECHAMENTO {today.strftime('%d.%m.%Y')}.xlsm"
-        
-        # Disponibilizando para download
-        st.download_button(
-            label="Baixar planilha de fechamento",
-            data=file_content,
-            file_name=new_filename,
-            mime="application/vnd.ms-excel.sheet.macroEnabled.12",
-            help="Clique para baixar a planilha de fechamento com os dados atualizados."
-        )
+            # Renomeando o arquivo para download com a data atual do Brasil
+            new_filename = f"FECHAMENTO {today.strftime('%d.%m.%Y')}.xlsm"
+            
+            # Disponibilizando para download
+            st.download_button(
+                label="Baixar planilha de fechamento",
+                data=file_content,
+                file_name=new_filename,
+                mime="application/vnd.ms-excel.sheet.macroEnabled.12",
+                help="Clique para baixar a planilha de fechamento com os dados atualizados."
+            )
+        except Exception as e:
+            st.error(f"Erro ao salvar o arquivo: {e}")
