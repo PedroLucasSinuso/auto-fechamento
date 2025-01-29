@@ -35,6 +35,10 @@ def startNewDay(sheet, day, collect=False):
             for row in wsRelFechamento[cell_range]:
                 for cell in row:
                     cell.value = None
+
+        # Zerar troco
+        wsSaldoCaixa["F20"] = None
+        wsSaldoCaixa["F22"] = None
         # Atualizar a data das células
         wsRelFechamento["B7"] = day.strftime('%d/%m/%Y')
         wsSaldoCaixa["G7"] = day.strftime('%d/%m/%Y')

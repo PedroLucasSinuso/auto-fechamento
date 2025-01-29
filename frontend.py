@@ -38,6 +38,8 @@ collect = st.checkbox("Coleta", value=False)
 
 def display_report_summary(report):
     st.subheader("Resumo do Relatório")
+    st.markdown("### Terminais")
+    st.write(report['Terminals'])
     
     st.markdown("### Vendas Brutas por Terminal")
     for terminal, value in report['Gross_Sales'].items():
