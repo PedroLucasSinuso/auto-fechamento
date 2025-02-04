@@ -9,12 +9,33 @@ import pytz
 st.set_page_config(
     page_title="Auto-fechamento: Taco",
     page_icon=":bar_chart:",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="expanded",
 )
 
+# Estilo da página
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-image: url("https://www.chromahouse.com/wp-content/uploads/2019/07/purpleandblue.png");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+    </style>
+    
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Título do aplicativo
-st.title("Auto-fechamento :bar_chart:")
+st.title("Auto-fechamento :bar_chart:",anchor='center')
 
 # Data de hoje no formato dd/mm/yyyy
 today = datetime.now(pytz.timezone('America/Sao_Paulo'))
@@ -26,6 +47,15 @@ col1, col2 = st.columns(2)
 with col1:
     # Upload do arquivo Word
     wordFile = st.file_uploader("Faça o upload do arquivo Word", type=["doc"])
+    
+    # Coleta
+    collect = st.checkbox("Coleta", value=False)
+    
+    # Troco  
+    change = st.checkbox("Troco")
+    if change: st.number_input("Valor do troco",label_visibility="collapsed", value=0.0,key='troco')
+    else: st.session_state['troco'] = 0.0
+    changeValue = st.session_state["troco"]
 
 with col2:
     # Upload do arquivo XLSM
@@ -33,9 +63,7 @@ with col2:
 
 xlsmFileDownload = None
 
-# Coleta
-collect = st.checkbox("Coleta", value=False)
-
+# Função para exibir o resumo do relatório
 def display_report_summary(report):
     st.subheader("Resumo do Relatório")
     st.markdown("### Terminais")
@@ -83,10 +111,7 @@ with col3:
                 reportDict = genReport(wordFile)
 
                 # Editar planilha
-                xlsmFileDownload = sheetEdit(xlsmFile, reportDict, today, collect)
-                
-                # Exibir resumo do relatório
-                display_report_summary(reportDict)
+                xlsmFileDownload = sheetEdit(xlsmFile, reportDict, today, collect, changeValue)
             except Exception as e:
                 st.error(f"Erro ao gerar o relatório: {e}")
 

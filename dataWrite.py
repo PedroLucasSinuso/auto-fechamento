@@ -13,7 +13,7 @@ def disable_protection(wsSaldoCaixa, wsRelFechamento):
     wsSaldoCaixa.protection.disable()
     wsRelFechamento.protection.disable()
 
-def update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect):
+def update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect, changeRequested):
     # Update cash and credsystem values
     wsSaldoCaixa["F12"] = wsSaldoCaixaDataOnly["F29"].value
     wsSaldoCaixa["F14"] = wsSaldoCaixaDataOnly["F30"].value
@@ -26,6 +26,14 @@ def update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect):
         wsSaldoCaixa["F16"] = None
         wsSaldoCaixa["F18"] = None
 
+    #Change requested
+    if changeRequested:
+        wsSaldoCaixa["F20"] = changeRequested
+        wsSaldoCaixa["F22"] = changeRequested
+    else:
+        wsSaldoCaixa["F20"] = None
+        wsSaldoCaixa["F22"] = None
+
 def clear_cells(wsRelFechamento, wsSaldoCaixa):
     # Clear specified cells
     for cell_range in ["B13:B20", "B24:B25", "G13:G23", "G25:G26"]:
@@ -33,16 +41,13 @@ def clear_cells(wsRelFechamento, wsSaldoCaixa):
             for cell in row:
                 cell.value = None
 
-    # Clear change
-    wsSaldoCaixa["F20"] = None
-    wsSaldoCaixa["F22"] = None
 
 def update_dates(wsRelFechamento, wsSaldoCaixa, day):
     # Update cell dates
     wsRelFechamento["B7"] = day.strftime('%d/%m/%Y')
     wsSaldoCaixa["G7"] = day.strftime('%d/%m/%Y')
 
-def startNewDay(sheet, day, collect=False):
+def startNewDay(sheet, day, collect, changeRequested):
     try:
         wbDataOnly, wb = load_workbooks(sheet)
         wsSaldoCaixaDataOnly = wbDataOnly["Saldo em Caixa"]
@@ -50,7 +55,7 @@ def startNewDay(sheet, day, collect=False):
         wsRelFechamento = wb["Rel. Fechamento de Caixa"]
 
         disable_protection(wsSaldoCaixa, wsRelFechamento)
-        update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect)
+        update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect, changeRequested)
         clear_cells(wsRelFechamento, wsSaldoCaixa)
         update_dates(wsRelFechamento, wsSaldoCaixa, day)
 
@@ -131,8 +136,8 @@ def insert_payment_methods(wsRelFechamento, report):
             print(error_message)
             st.warning(error_message)
 
-def sheetEdit(sheet, report, day, collect=False):
-    wb = startNewDay(sheet, day, collect)
+def sheetEdit(sheet, report, day, collect=False, changeRequested=0):
+    wb = startNewDay(sheet, day, collect,changeRequested)
     if wb is None:
         error_message = "Error starting a new day"
         print(error_message)

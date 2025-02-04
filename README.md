@@ -1,5 +1,5 @@
 # auto-fechamento
-Uma forma de automatizar o fechamento geral das lojas TACO, garantindo velocidade e precisão diária para os caixas.
+Uma forma de automatizar o fechamento geral das lojas TACO, garantindo velocidade e precisão diária para os operadores de caixa. Aplicativo de uso interno.
 
 ## Como executar o projeto
 
@@ -26,4 +26,4 @@ Uma forma de automatizar o fechamento geral das lojas TACO, garantindo velocidad
 ## Acessar o projeto online
 
 Você também pode acessar o projeto online através do seguinte link:
-[Auto-fechamento](https://auto-fechamento.streamlit.app)
+[Auto-fechamento TACO](https://auto-fechamento.streamlit.app)
