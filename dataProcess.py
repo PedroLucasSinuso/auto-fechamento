@@ -2,198 +2,92 @@ import aspose.words as aw
 import re
 import streamlit as st
 
-def genReport(word_file) -> dict:
-    
+def extract_text_from_word(word_file):
+    # Extracts and returns a list of non-empty lines from a Word document.
     doc = aw.Document(word_file)
-    lines = [p.get_text().strip() for p in doc.get_child_nodes(aw.NodeType.PARAGRAPH, True) if p.get_text().strip()]
-    
-    report = {
-        'Terminals': [],
-        'Gross_Sales': {},
-        'Gross_Add': 0,
-        'Discounts': 0,
-        'Exchanged_Items': 0,
-        'Shipping': 0,
-        'Cash_Inflow': {},
-        'Cash_Outflow': {},
-        'Total_Cash_Inflow': 0,
-        'Total_Cash_Outflow': 0,
-        'Expenses': 0,
-        'Credsystem': 0,
-        'Omnichannel': 0,
-        'Payment_Methods': {}
+    return [p.get_text().strip() for p in doc.get_child_nodes(aw.NodeType.PARAGRAPH, True) if p.get_text().strip()]
+
+def extract_value_from_line(line, pattern):
+    # Extracts and converts a numeric value from a given line based on a regex pattern.
+    match = re.search(pattern, line)
+    return float(match.group().replace(',', '.')) if match else 0
+
+def process_terminal_data(lines, index, report):
+    # Processes terminal-related data and updates the report dictionary.
+    terminal = re.search(r'\d+', lines[index]).group()
+    if terminal not in report['Terminals']:
+        report['Terminals'].append(terminal)
+        report['Gross_Sales'][terminal] = extract_value_from_line(lines[index+2], r'\d+,\d+')
+        report['Exchanged_Items'] += extract_value_from_line(lines[index+8], r'\d+,\d+')
+        report['Gross_Add'] += extract_value_from_line(lines[index+4], r'\d+,\d+')
+        report['Gross_Add'] += extract_value_from_line(lines[index+6], r'\d+,\d+')
+        report['Discounts'] += extract_value_from_line(lines[index+3], r'\d+,\d+')
+        report['Discounts'] += extract_value_from_line(lines[index+5], r'\d+,\d+')
+
+def process_financial_entries(line, report):
+    # Processes financial information like shipping, omnichannel, and credsystem.
+    categories = {
+        r'FRETE\s+B2C': 'Shipping',
+        r'OMNICHANNEL': 'Omnichannel',
+        r'\bCREDSYSTEM\b': 'Credsystem'
     }
+    for pattern, key in categories.items():
+        report[key] += extract_value_from_line(line, r'\d+,\d+') if re.search(pattern, line) else 0
+
+def process_payment_methods(line, report):
+    # Extracts payment method details and updates the report.
+    payment_methods = {
+        r'DINHEIRO': 'DINHEIRO',
+        r'QR': 'QR',
+        r'CARTAO\s+CREDITO\s+PDV': 'CARTAO CREDITO PDV',
+        r'CARTAO\s+DEBITO\s+PDV': 'CARTAO DEBITO PDV',
+        r'CARTAO\s+CREDITO$': 'CARTAO CREDITO',
+        r'CARTAO\s+DEBITO$': 'CARTAO DEBITO'
+    }
+    for pattern, label in payment_methods.items():
+        if re.search(pattern, line):
+            value = extract_value_from_line(line, r'\d+,\d+')
+            if label == 'DINHEIRO':
+                value /= 2  # Special case for cash
+            report['Payment_Methods'][label] = report['Payment_Methods'].get(label, 0) + value
+
+def process_cash_flows(line, report, category, patterns):
+    # Processes cash inflow or outflow entries.
+    for pattern in patterns:
+        if re.search(pattern, line):
+            value = extract_value_from_line(line, r'\d+,\d+')
+            report[category][pattern] = value
+            report[f'Total_{category}'] += value
+
+def genReport(word_file) -> dict:
+    lines = extract_text_from_word(word_file)
+    report = {
+        'Terminals': [], 'Gross_Sales': {}, 'Gross_Add': 0, 'Discounts': 0,
+        'Exchanged_Items': 0, 'Shipping': 0, 'Cash_Inflow': {}, 'Cash_Outflow': {},
+        'Total_Cash_Inflow': 0, 'Total_Cash_Outflow': 0, 'Expenses': 0,
+        'Credsystem': 0, 'Omnichannel': 0, 'Payment_Methods': {}
+    }
+    
+    cash_inflow_patterns = [
+        r"ENTRADA DE TROCO", r"ENTRADA FUNDO DE CAIXA", r"ENTRADA NO CAIXA", r"SALDO INICIAL", r"VENDA FRANQUIA"
+    ]
+    
+    cash_outflow_patterns = [
+        r"BAINHAS E MATERIAL DE COSTURA", r"COLETA PROSEGUR", r"CRM BONUS", r"CÓPIAS/XEROX", r"DEPÓSITO DE TROCO",
+        r"DESCONTO UNIFORME", r"DESP - BRINDES", r"DESP-OUTROS MAT. DE CONSU", r"DESPESA MATERIAL COPA",
+        r"DESPESA NOTA FISCAL", r"DIFERENCA DE TROCA", r"ESTACIONAMENTO", r"HIGIENE E LIMPEZA", r"LANCHE",
+        r"MANUTENÇÃO E REPAROS", r"MATERIAL ESCRITÓRIO E PAPELARIA", r"MEDICINA DO TRABALHO", r"PASSAGENS/CONDUÇÕES",
+        r"PREMIAÇÃO CREDSYSTEM", r"PRÊMIOS E GRATIFICAÇÕES", r"RETIRADA DO CAIXA", r"SEGURANÇA E VIGILÂNCIA",
+        r"SUPLEMENTO DE INFORMATICA", r"TREINAMENTO", r"UNIFORME", r"VIAGEM", r"VITRINE/MATERIAL DE VITRINE", r"ÁGUA"
+    ]
+    
     for i, line in enumerate(lines):
-        try:
-            if re.search(r'Terminal', line):
-                # Inserir o número do terminal ao relatório se ele não existir
-                terminal = re.search(r'\d+', line).group()
-                if terminal not in report['Terminals']: 
-                    report['Terminals'].append(terminal)
-                    try:
-                        # Inserir venda bruta do terminal ao relatório
-                        gross_sales_match = re.search(r'\d+,\d+', lines[i+2])
-                        if gross_sales_match:
-                            report['Gross_Sales'][terminal] = float(gross_sales_match.group().replace(',', '.'))
-                    except Exception as e:
-                        error_message = f"Erro ao inserir venda bruta do terminal {terminal}: {e}"
-                        print(error_message)
-                        st.warning(error_message)
-                    try:
-                        # Inserir trocas do terminal ao relatório
-                        exchanged_items_match = re.search(r'\d+,\d+', lines[i+8])
-                        if exchanged_items_match:
-                            report['Exchanged_Items'] += float(exchanged_items_match.group().replace(',', '.'))
-                    except Exception as e:
-                        error_message = f"Erro ao inserir trocas do terminal {terminal}: {e}"
-                        print(error_message)
-                        st.warning(error_message)
-                    try:
-                        # Inserir acréscimos do terminal ao relatório
-                        gross_add_match_1 = re.search(r'\d+,\d+', lines[i+4])
-                        gross_add_match_2 = re.search(r'\d+,\d+', lines[i+6])
-                        if gross_add_match_1:
-                            report['Gross_Add'] += float(gross_add_match_1.group().replace(',', '.'))
-                        if gross_add_match_2:
-                            report['Gross_Add'] += float(gross_add_match_2.group().replace(',', '.'))
-                    except Exception as e:
-                        error_message = f"Erro ao inserir acréscimos do terminal {terminal}: {e}"
-                        print(error_message)
-                        st.warning(error_message)
-                    try:
-                        # Inserir descontos do terminal ao relatório
-                        discounts_match_1 = re.search(r'\d+,\d+', lines[i+3])
-                        discounts_match_2 = re.search(r'\d+,\d+', lines[i+5])
-                        if discounts_match_1:
-                            report['Discounts'] += float(discounts_match_1.group().replace(',', '.'))
-                        if discounts_match_2:
-                            report['Discounts'] += float(discounts_match_2.group().replace(',', '.'))
-                    except Exception as e:
-                        error_message = f"Erro ao inserir descontos do terminal {terminal}: {e}"
-                        print(error_message)
-                        st.warning(error_message)
-            
-            try:
-                # Inserir frete ao relatório se existir na linha
-                if re.search(r'FRETE\s*B2C', line): 
-                    shipping_match = re.search(r'\d+,\d+', line)
-                    if shipping_match:
-                        report['Shipping'] += float(shipping_match.group().replace(',', '.'))
-            except Exception as e:
-                error_message = f"Erro ao inserir frete: {e}"
-                print(error_message)
-                st.warning(error_message)
-
-            try:
-                # Inserir omnichannel ao relatório se existir na linha
-                if re.search(r'OMNICHANNEL', line): 
-                    omnichannel_match = re.search(r'\d+,\d+', line)
-                    if omnichannel_match:
-                        report['Omnichannel'] += float(omnichannel_match.group().replace(',', '.'))
-            except Exception as e:
-                error_message = f"Erro ao inserir omnichannel: {e}"
-                print(error_message)
-                st.warning(error_message)
-            
-            try:
-                # Inserir credsystem ao relatório se existir na linha
-                if re.search(r'CREDSYSTEM', line): 
-                    credsystem_match = re.search(r'\d+,\d+', line)
-                    if credsystem_match:
-                        report['Credsystem'] += float(credsystem_match.group().replace(',', '.'))
-            except Exception as e:
-                error_message = f"Erro ao inserir credsystem: {e}"
-                print(error_message)
-                st.warning(error_message)
-
-            try:
-                # Identificar as linhas que contém métodos de pagamento e inserir ao relatório {"Método de pagamento":valor}
-                if re.search(r'DINHEIRO|QR|CARTAO\s*CREDITO\s*PDV|CARTAO\s*DEBITO\s*PDV|CARTAO\s*CREDITO$|CARTAO\s*DEBITO$', line):
-                    payType = re.search(r'DINHEIRO|QR|CARTAO\s*CREDITO\s*PDV|CARTAO\s*DEBITO\s*PDV|CARTAO\s*CREDITO$|CARTAO\s*DEBITO$', line).group()
-                    payment_match = re.search(r'\d+,\d+', line)
-                    if payment_match:
-                        value = float(payment_match.group().replace(',', '.'))
-                        # Se pagamento for dinheiro, dividir por 2
-                        if payType == 'DINHEIRO': value /= 2
-                        report['Payment_Methods'][payType] = report['Payment_Methods'].get(payType,0) + value
-            except Exception as e:
-                error_message = f"Erro ao inserir método de pagamento {payType}: {e}"
-                print(error_message)
-                st.warning(error_message)
-
-            # Mapear entradas de caixa
-            cashInflow = [
-                "ENTRADA DE TROCO",
-                "ENTRADA FUNDO DE CAIXA",
-                "ENTRADA NO CAIXA",
-                "SALDO INICIAL",
-                "VENDA FRANQUIA"
-            ]
-
-            # Mapear saídas de caixa
-            cashOutflow = [
-                "BAINHAS E MATERIAL DE COSTURA",
-                "COLETA PROSEGUR",
-                "CRM BONUS",
-                "CÓPIAS/XEROX",
-                "DEPÓSITO DE TROCO",
-                "DESCONTO UNIFORME",
-                "DESP - BRINDES",
-                "DESP-OUTROS MAT. DE CONSU",
-                "DESPESA MATERIAL COPA",
-                "DESPESA NOTA FISCAL",
-                "DIFERENCA DE TROCA",
-                "ESTACIONAMENTO",
-                "HIGIENE E LIMPEZA",
-                "LANCHE",
-                "MANUTENÇÃO E REPAROS",
-                "MATERIAL ESCRITÓRIO E PAPELARIA",
-                "MEDICINA DO TRABALHO",
-                "PASSAGENS/CONDUÇÕES",
-                "PREMIAÇÃO CREDSYSTEM",
-                "PRÊMIOS E GRATIFICAÇÕES",
-                "RETIRADA DO CAIXA",
-                "SEGURANÇA E VIGILÂNCIA",
-                "SUPLEMENTO DE INFORMATICA",
-                "TREINAMENTO",
-                "UNIFORME",
-                "VIAGEM",
-                "VITRINE/MATERIAL DE VITRINE",
-                "ÁGUA"
-            ]
-            
-            # Inserir entradas de caixa ao relatório
-            for pattern in cashInflow:
-                try:
-                    if re.search(pattern, line):
-                        cash_inflow_match = re.search(r'\d+,\d+', line)
-                        if cash_inflow_match:
-                            value = float(cash_inflow_match.group().replace(',', '.'))
-                            report['Cash_Inflow'][pattern] = value
-                            report['Total_Cash_Inflow'] += value
-                except Exception as e:
-                    error_message = f"Erro ao inserir entrada de caixa {pattern}: {e}"
-                    print(error_message)
-                    st.warning(error_message)
-            
-            # Inserir saídas de caixa ao relatório
-            for pattern in cashOutflow:
-                try:
-                    if re.search(pattern, line):
-                        cash_outflow_match = re.search(r'\d+,\d+', line)
-                        if cash_outflow_match:
-                            value = float(cash_outflow_match.group().replace(',', '.'))
-                            report['Cash_Outflow'][pattern] = value
-                            report['Total_Cash_Outflow'] += value
-                except Exception as e:
-                    error_message = f"Erro ao inserir saída de caixa {pattern}: {e}"
-                    print(error_message)
-                    st.warning(error_message)
-
-        except (AttributeError, ValueError) as e:
-            error_message = f"Erro ao processar a linha: {line}"
-            print(error_message)
-            st.warning(error_message)
+        if re.search(r'Terminal', line):
+            process_terminal_data(lines, i, report)
+        process_financial_entries(line, report)
+        process_payment_methods(line, report)
+        process_cash_flows(line, report, 'Cash_Inflow', cash_inflow_patterns)
+        process_cash_flows(line, report, 'Cash_Outflow', cash_outflow_patterns)
     
     return report
 
