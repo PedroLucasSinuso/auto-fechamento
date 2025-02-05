@@ -26,7 +26,7 @@ def update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect, chan
         wsSaldoCaixa["F16"] = None
         wsSaldoCaixa["F18"] = None
 
-    #Change requested
+    # Change requested
     if changeRequested:
         wsSaldoCaixa["F20"] = changeRequested
         wsSaldoCaixa["F22"] = changeRequested
@@ -40,7 +40,6 @@ def clear_cells(wsRelFechamento, wsSaldoCaixa):
         for row in wsRelFechamento[cell_range]:
             for cell in row:
                 cell.value = None
-
 
 def update_dates(wsRelFechamento, wsSaldoCaixa, day):
     # Update cell dates
@@ -136,8 +135,31 @@ def insert_payment_methods(wsRelFechamento, report):
             print(error_message)
             st.warning(error_message)
 
+def compare_totals(wsRelFechamento):
+    # Helper function to handle NoneType values
+    def get_value(cell):
+        return cell.value if cell.value is not None else 0
+
+    # Sum the gross total of terminals (B13 to B22)
+    gross_total_terminals = sum(get_value(wsRelFechamento[f"B{row}"]) for row in range(13, 23))
+
+    # Subtract the value (B24 + B25) from the gross total of terminals and assign the result to netSale
+    netSale = gross_total_terminals - (get_value(wsRelFechamento["B24"]) + get_value(wsRelFechamento["B25"]))
+
+    # Sum the gross total of payments from cells G13 to G22
+    gross_total_payments = sum(get_value(wsRelFechamento[f"G{row}"]) for row in range(13, 23))
+
+    # Subtract the value of G23 from the gross total of payments and assign the result to netPay
+    netPay = gross_total_payments - get_value(wsRelFechamento["G23"])
+
+    # Compare netPay and netSale
+    if netPay == netSale:
+        st.success("Bateu! :sunglasses:")
+    else:
+        st.error("Bateu não. Confere a tabela por favor :skull:")
+
 def sheetEdit(sheet, report, day, collect=False, changeRequested=0):
-    wb = startNewDay(sheet, day, collect,changeRequested)
+    wb = startNewDay(sheet, day, collect, changeRequested)
     if wb is None:
         error_message = "Error starting a new day"
         print(error_message)
@@ -150,5 +172,6 @@ def sheetEdit(sheet, report, day, collect=False, changeRequested=0):
     insert_total_values(wsRelFechamento, report)
     map_other_information(wsRelFechamento, report)
     insert_payment_methods(wsRelFechamento, report)
+    compare_totals(wsRelFechamento)
 
     return wb

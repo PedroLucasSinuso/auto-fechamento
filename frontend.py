@@ -16,6 +16,13 @@ st.set_page_config(
 # Estilo da página
 st.markdown(
     """
+    <div style='text-align: center;'><img src='https://taco.vtexassets.com/assets/vtex/assets-builder/taco.store-theme/3.0.4/img/logo-black___99045b7978d746cb5a089dde09b96c2e.png' width='200' />
+    </div>
+
+    <h1 style='text-align: center;'>
+        Auto-fechamento
+    </h1>
+
     <style>
     .stApp {
         background-image: url("https://www.chromahouse.com/wp-content/uploads/2019/07/purpleandblue.png");
@@ -26,16 +33,14 @@ st.markdown(
     </style>
     
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# Título do aplicativo
-st.title("Auto-fechamento :bar_chart:",anchor='center')
 
 # Data de hoje no formato dd/mm/yyyy
 today = datetime.now(pytz.timezone('America/Sao_Paulo'))
@@ -65,41 +70,42 @@ xlsmFileDownload = None
 
 # Função para exibir o resumo do relatório
 def display_report_summary(report):
-    st.subheader("Resumo do Relatório")
-    st.markdown("### Terminais")
-    st.write(report['Terminals'])
+    st.markdown("<h3 style='text-align: center;'>Resumo do Relatório</h3>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"### Terminais: {', '.join(str(t) for t in report['Terminals'])}")
+
+        st.markdown("### Vendas Brutas por Terminal")
+        for terminal, value in report['Gross_Sales'].items():
+            st.write(f"Terminal {terminal}: R$ {value:.2f}")
+        
+        st.markdown("### Acréscimos e Descontos")
+        st.write(f"Acréscimos: R$ {report['Gross_Add']:.2f}")
+        st.write(f"Descontos: R$ {report['Discounts']:.2f}")
+        
+        st.markdown("### Trocas")
+        st.write(f"Total de Trocas: R$ {report['Exchanged_Items']:.2f}")
+        
+        st.markdown("### Frete")
+        st.write(f"Frete: R$ {report['Shipping']:.2f}")
     
-    st.markdown("### Vendas Brutas por Terminal")
-    for terminal, value in report['Gross_Sales'].items():
-        st.write(f"Terminal {terminal}: R$ {value:.2f}")
-    
-    st.markdown("### Acréscimos e Descontos")
-    st.write(f"Acréscimos: R$ {report['Gross_Add']:.2f}")
-    st.write(f"Descontos: R$ {report['Discounts']:.2f}")
-    
-    st.markdown("### Trocas")
-    st.write(f"Total de Trocas: R$ {report['Exchanged_Items']:.2f}")
-    
-    st.markdown("### Frete")
-    st.write(f"Frete: R$ {report['Shipping']:.2f}")
-    
-    st.markdown("### Movimentações de Caixa")
-    st.write(f"Entradas de Caixa: R$ {report['Total_Cash_Inflow']:.2f}")
-    st.write(f"Saídas de Caixa: R$ {report['Total_Cash_Outflow']:.2f}")
-    
-    st.markdown("### Credsystem")
-    st.write(f"Credsystem: R$ {report['Credsystem']:.2f}")
-    
-    st.markdown("### Omnichannel")
-    st.write(f"Omnichannel: R$ {report['Omnichannel']:.2f}")
-    
-    st.markdown("### Métodos de Pagamento")
-    for method, value in report['Payment_Methods'].items():
-        st.write(f"{method}: R$ {value:.2f}")
+    with col2:
+        st.markdown("### Movimentações de Caixa")
+        st.write(f"Entradas de Caixa: R$ {report['Total_Cash_Inflow']:.2f}")
+        st.write(f"Saídas de Caixa: R$ {report['Total_Cash_Outflow']:.2f}")
+        
+        st.markdown("### Credsystem")
+        st.write(f"Credsystem: R$ {report['Credsystem']:.2f}")
+        
+        st.markdown("### Omnichannel")
+        st.write(f"Omnichannel: R$ {report['Omnichannel']:.2f}")
+        
+        st.markdown("### Métodos de Pagamento")
+        for method, value in report['Payment_Methods'].items():
+            st.write(f"{method}: R$ {value:.2f}")
 
 # Divisão da página em duas colunas para os botões
 col3, col4 = st.columns(2)
-
 with col3:
     # Botão para gerar o relatório
     if st.button("Gerar Relatório"):
@@ -109,9 +115,10 @@ with col3:
             try:
                 # Gerar relatório
                 reportDict = genReport(wordFile)
-
                 # Editar planilha
                 xlsmFileDownload = sheetEdit(xlsmFile, reportDict, today, collect, changeValue)
+                # Exibir resumo do relatório
+                display_report_summary(reportDict)
             except Exception as e:
                 st.error(f"Erro ao gerar o relatório: {e}")
 
