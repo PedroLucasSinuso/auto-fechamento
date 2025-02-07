@@ -58,6 +58,9 @@ def process_cash_flows(line, report, category, patterns):
             value = extract_value_from_line(line, r'\d+,\d+')
             report[category][pattern] = value
             report[f'Total_{category}'] += value
+            # If the pattern is 'PREMIAÇÃO CREDSYSTEM', subtract the value from report['Credsystem']
+            if pattern == "PREMIAÇÃO CREDSYSTEM":
+                report['Credsystem'] -= value
 
 def genReport(word_file) -> dict:
     lines = extract_text_from_word(word_file)

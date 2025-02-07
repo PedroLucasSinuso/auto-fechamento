@@ -125,3 +125,9 @@ cython_debug/
 
 # Output file
 output.doc
+
+# VSCode settings
+.vscode/
+
+# Devcontainer settings
+.devcontainer/

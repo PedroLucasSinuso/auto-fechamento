@@ -144,13 +144,13 @@ def compare_totals(wsRelFechamento):
     gross_total_terminals = sum(get_value(wsRelFechamento[f"B{row}"]) for row in range(13, 23))
 
     # Subtract the value (B24 + B25) from the gross total of terminals and assign the result to netSale
-    netSale = gross_total_terminals - (get_value(wsRelFechamento["B24"]) + get_value(wsRelFechamento["B25"]))
+    netSale = round(gross_total_terminals - (get_value(wsRelFechamento["B24"]) + get_value(wsRelFechamento["B25"])), 2)
 
     # Sum the gross total of payments from cells G13 to G22
     gross_total_payments = sum(get_value(wsRelFechamento[f"G{row}"]) for row in range(13, 23))
 
     # Subtract the value of G23 from the gross total of payments and assign the result to netPay
-    netPay = gross_total_payments - get_value(wsRelFechamento["G23"])
+    netPay = round(gross_total_payments - get_value(wsRelFechamento["G23"]), 2)
 
     # Compare netPay and netSale
     if netPay == netSale:
