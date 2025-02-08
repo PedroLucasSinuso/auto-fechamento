@@ -150,7 +150,7 @@ def compare_totals(wsRelFechamento):
     gross_total_payments = sum(get_value(wsRelFechamento[f"G{row}"]) for row in range(13, 23))
 
     # Subtract the value of G23 from the gross total of payments and assign the result to netPay
-    netPay = round(gross_total_payments - get_value(wsRelFechamento["G23"]), 2)
+    netPay = round(gross_total_payments - get_value(wsRelFechamento["G23"]), 2) 
 
     # Compare netPay and netSale
     if netPay == netSale:
