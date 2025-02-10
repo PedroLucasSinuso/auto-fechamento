@@ -5,7 +5,18 @@ import streamlit as st
 def extract_text_from_word(word_file):
     # Extracts and returns a list of non-empty lines from a Word document.
     doc = aw.Document(word_file)
-    return [p.get_text().strip() for p in doc.get_child_nodes(aw.NodeType.PARAGRAPH, True) if p.get_text().strip()]
+    lines = [p.get_text().strip() for p in doc.get_child_nodes(aw.NodeType.PARAGRAPH, True) if p.get_text().strip()]
+    # Regular expression to match dates in dd/mm/yyyy format
+    date_pattern = r'\b\d{2}/\d{2}/\d{4}\b'
+    
+    # Filter out lines that contain "Filial", "Aspose.Words", or any date in dd/mm/yyyy format
+    filtered_lines = [
+        line for line in lines 
+        if "Filial" not in line and "Aspose.Words" not in line and not re.search(date_pattern, line)
+    ]
+    
+    return filtered_lines
+    
 
 def extract_value_from_line(line, pattern):
     # Extracts and converts a numeric value from a given line based on a regex pattern.
@@ -15,6 +26,8 @@ def extract_value_from_line(line, pattern):
 def process_terminal_data(lines, index, report):
     # Processes terminal-related data and updates the report dictionary.
     terminal = re.search(r'\d+', lines[index]).group()
+    venda_bruta = extract_value_from_line(lines[index + 2], r'\d+,\d+')
+    if venda_bruta <= 0: return
     if terminal not in report['Terminals']:
         report['Terminals'].append(terminal)
         report['Gross_Sales'][terminal] = extract_value_from_line(lines[index+2], r'\d+,\d+')
