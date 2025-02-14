@@ -55,7 +55,8 @@ def process_payment_methods(line, report):
         r'CARTAO\s+CREDITO\s+PDV': 'CARTAO CREDITO PDV',
         r'CARTAO\s+DEBITO\s+PDV': 'CARTAO DEBITO PDV',
         r'CARTAO\s+DE\s+CREDITO': 'CARTAO DE CREDITO',
-        r'CARTAO\s+DE\s+DEBITO': 'CARTAO DE DEBITO'
+        r'CARTAO\s+DE\s+DEBITO': 'CARTAO DE DEBITO',
+        r'VALE\s+FUNCIONARIO': 'VALE FUNCIONARIO'
     }
     for pattern, label in payment_methods.items():
         if re.search(pattern, line):
