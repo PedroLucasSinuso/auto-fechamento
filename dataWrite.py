@@ -124,6 +124,7 @@ def insert_payment_methods(wsRelFechamento, report):
         r'CARTAO\s*DEBITO\s*PDV': "G15",
         r'CARTAO\s+DE\s+CREDITO': "G16",
         r'CARTAO\s+DE\s+DEBITO': "G17",
+        r'VALE FUNCIONARIO': "G21"
     }
     for pattern, cell in payment_mappings.items():
         try:
