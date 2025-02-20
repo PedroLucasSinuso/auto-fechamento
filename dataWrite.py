@@ -13,7 +13,11 @@ def disable_protection(wsSaldoCaixa, wsRelFechamento):
     wsSaldoCaixa.protection.disable()
     wsRelFechamento.protection.disable()
 
-def update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect, changeRequested):
+def update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect, changeRequested, cashFund):
+    
+    #Update cash fund
+    wsSaldoCaixa["F10"] = cashFund
+    
     # Update cash and credsystem values
     wsSaldoCaixa["F12"] = wsSaldoCaixaDataOnly["F29"].value
     wsSaldoCaixa["F14"] = wsSaldoCaixaDataOnly["F30"].value
@@ -46,7 +50,7 @@ def update_dates(wsRelFechamento, wsSaldoCaixa, day):
     wsRelFechamento["B7"] = day.strftime('%d/%m/%Y')
     wsSaldoCaixa["G7"] = day.strftime('%d/%m/%Y')
 
-def startNewDay(sheet, day, collect, changeRequested):
+def startNewDay(sheet, day, collect, changeRequested, cashFund):
     try:
         wbDataOnly, wb = load_workbooks(sheet)
         wsSaldoCaixaDataOnly = wbDataOnly["Saldo em Caixa"]
@@ -54,7 +58,7 @@ def startNewDay(sheet, day, collect, changeRequested):
         wsRelFechamento = wb["Rel. Fechamento de Caixa"]
 
         disable_protection(wsSaldoCaixa, wsRelFechamento)
-        update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect, changeRequested)
+        update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect, changeRequested, cashFund)
         clear_cells(wsRelFechamento, wsSaldoCaixa)
         update_dates(wsRelFechamento, wsSaldoCaixa, day)
 
@@ -159,12 +163,12 @@ def compare_totals(wsRelFechamento):
     if netPay == netSale:
         st.success("Bateu! :sunglasses:")
     else:
-        st.error("Bateu não. Confere a tabela por favor :skull:")
+        st.error("Divergente. Confere a tabela por favor :skull:")
 
-def sheetEdit(sheet, report, day, collect=False, changeRequested=0):
-    wb = startNewDay(sheet, day, collect, changeRequested)
+def sheetEdit(sheet, report, day, collect=False, changeRequested=0,cashFund=0.0):
+    wb = startNewDay(sheet, day, collect, changeRequested, cashFund)
     if wb is None:
-        error_message = "Error starting a new day"
+        error_message = "Erro ao iniciar um novo dia"
         print(error_message)
         st.warning(error_message)
         return None

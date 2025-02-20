@@ -62,6 +62,10 @@ with col1:
     else: st.session_state['troco'] = 0.0
     changeValue = st.session_state["troco"]
 
+    # Fundo de caixa
+    cashFund = st.number_input("Fundo de caixa", value=0.0)
+    st.session_state['cashFund'] = cashFund
+    
 with col2:
     # Upload do arquivo XLSM
     xlsmFile = st.file_uploader("Faça o upload do arquivo XLSM", type=["xlsm"])
@@ -109,14 +113,14 @@ col3, col4 = st.columns(2)
 with col3:
     # Botão para gerar o relatório
     if st.button("Gerar Relatório"):
-        if not wordFile or not xlsmFile:
-            st.warning("Por favor, envie os arquivos Word e XLSM antes de gerar o relatório.")
+        if not wordFile or not xlsmFile or cashFund == 0.0:
+            st.warning("Por favor, envie os arquivos Word, XLSM e o valor do fundo de caixa antes de gerar o relatório.")
         else:
             try:
                 # Gerar relatório
                 reportDict = genReport(wordFile)
                 # Editar planilha
-                xlsmFileDownload = sheetEdit(xlsmFile, reportDict, today, collect, changeValue)
+                xlsmFileDownload = sheetEdit(xlsmFile, reportDict, today, collect, changeValue, cashFund)
                 # Exibir resumo do relatório
                 display_report_summary(reportDict)
             except Exception as e:
