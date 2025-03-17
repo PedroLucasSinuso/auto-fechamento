@@ -1,107 +1,93 @@
 from openpyxl import load_workbook
 import re
 import streamlit as st
+from config import PAYMENT_MAPPINGS, DATE_FORMAT
 
 def load_workbooks(sheet):
-    # Load the workbooks
-    wbDataOnly = load_workbook(sheet, data_only=True)
+    wb_data_only = load_workbook(sheet, data_only=True)
     wb = load_workbook(sheet, keep_vba=True)
-    return wbDataOnly, wb
+    return wb_data_only, wb
 
-def disable_protection(wsSaldoCaixa, wsRelFechamento):
-    # Remove sheet protection
-    wsSaldoCaixa.protection.disable()
-    wsRelFechamento.protection.disable()
+def disable_protection(ws_saldo_caixa, ws_rel_fechamento):
+    ws_saldo_caixa.protection.disable()
+    ws_rel_fechamento.protection.disable()
 
-def update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect, changeRequested, cashFund):
-    
-    #Update cash fund
-    wsSaldoCaixa["F10"] = cashFund
-    
-    # Update cash and credsystem values
-    wsSaldoCaixa["F12"] = wsSaldoCaixaDataOnly["F29"].value
-    wsSaldoCaixa["F14"] = wsSaldoCaixaDataOnly["F30"].value
+def update_cash_and_credsystem(ws_saldo_caixa, ws_saldo_caixa_data_only, collect, change_requested, cash_fund):
+    ws_saldo_caixa["F10"] = cash_fund
+    ws_saldo_caixa["F12"] = ws_saldo_caixa_data_only["F29"].value
+    ws_saldo_caixa["F14"] = ws_saldo_caixa_data_only["F30"].value
 
-    # Collection day
     if collect:
-        wsSaldoCaixa["F16"] = wsSaldoCaixaDataOnly["F29"].value
-        wsSaldoCaixa["F18"] = wsSaldoCaixaDataOnly["F30"].value
+        ws_saldo_caixa["F16"] = ws_saldo_caixa_data_only["F29"].value
+        ws_saldo_caixa["F18"] = ws_saldo_caixa_data_only["F30"].value
     else:
-        wsSaldoCaixa["F16"] = None
-        wsSaldoCaixa["F18"] = None
+        ws_saldo_caixa["F16"] = None
+        ws_saldo_caixa["F18"] = None
 
-    # Change requested
-    if changeRequested:
-        wsSaldoCaixa["F20"] = changeRequested
-        wsSaldoCaixa["F22"] = changeRequested
+    if change_requested:
+        ws_saldo_caixa["F20"] = change_requested
+        ws_saldo_caixa["F22"] = change_requested
     else:
-        wsSaldoCaixa["F20"] = None
-        wsSaldoCaixa["F22"] = None
+        ws_saldo_caixa["F20"] = None
+        ws_saldo_caixa["F22"] = None
 
-def clear_cells(wsRelFechamento, wsSaldoCaixa):
-    # Clear specified cells
+def clear_cells(ws_rel_fechamento, ws_saldo_caixa):
     for cell_range in ["B13:B20", "B24:B25", "G13:G23", "G25:G26"]:
-        for row in wsRelFechamento[cell_range]:
+        for row in ws_rel_fechamento[cell_range]:
             for cell in row:
                 cell.value = None
 
-def update_dates(wsRelFechamento, wsSaldoCaixa, day):
-    # Update cell dates
-    wsRelFechamento["B7"] = day.strftime('%d/%m/%Y')
-    wsSaldoCaixa["G7"] = day.strftime('%d/%m/%Y')
+def update_dates(ws_rel_fechamento, ws_saldo_caixa, day):
+    ws_rel_fechamento["B7"] = day.strftime(DATE_FORMAT)
+    ws_saldo_caixa["G7"] = day.strftime(DATE_FORMAT)
 
-def startNewDay(sheet, day, collect, changeRequested, cashFund):
+def start_new_day(sheet, day, collect, change_requested, cash_fund):
     try:
-        wbDataOnly, wb = load_workbooks(sheet)
-        wsSaldoCaixaDataOnly = wbDataOnly["Saldo em Caixa"]
-        wsSaldoCaixa = wb["Saldo em Caixa"]
-        wsRelFechamento = wb["Rel. Fechamento de Caixa"]
+        wb_data_only, wb = load_workbooks(sheet)
+        ws_saldo_caixa_data_only = wb_data_only["Saldo em Caixa"]
+        ws_saldo_caixa = wb["Saldo em Caixa"]
+        ws_rel_fechamento = wb["Rel. Fechamento de Caixa"]
 
-        disable_protection(wsSaldoCaixa, wsRelFechamento)
-        update_cash_and_credsystem(wsSaldoCaixa, wsSaldoCaixaDataOnly, collect, changeRequested, cashFund)
-        clear_cells(wsRelFechamento, wsSaldoCaixa)
-        update_dates(wsRelFechamento, wsSaldoCaixa, day)
+        disable_protection(ws_saldo_caixa, ws_rel_fechamento)
+        update_cash_and_credsystem(ws_saldo_caixa, ws_saldo_caixa_data_only, collect, change_requested, cash_fund)
+        clear_cells(ws_rel_fechamento, ws_saldo_caixa)
+        update_dates(ws_rel_fechamento, ws_saldo_caixa, day)
 
         return wb
-
     except Exception as e:
-        error_message = f"Error starting a new day: {e}"
+        error_message = f"Erro ao iniciar um novo dia: {e}"
         print(error_message)
         st.warning(error_message)
         return None
 
-def insert_terminal_values(wsRelFechamento, report):
-    # Insert terminal values (001-006) into cells B13-B18
+def insert_terminal_values(ws_rel_fechamento, report):
     for i in range(1, 7):
         try:
             terminal_key = f"{i:03}"
             cell = f"B{12 + i}"
             if terminal_key in report['Gross_Sales']:
-                wsRelFechamento[cell] = report['Gross_Sales'][terminal_key]
+                ws_rel_fechamento[cell] = report['Gross_Sales'][terminal_key]
         except Exception as e:
-            error_message = f"Error inserting terminal value {terminal_key}: {e}"
+            error_message = f"Erro ao inserir valor do terminal {terminal_key}: {e}"
             print(error_message)
             st.warning(error_message)
 
-def insert_total_values(wsRelFechamento, report):
-    # Insert total addition value into cell B19
+def insert_total_values(ws_rel_fechamento, report):
     try:
-        wsRelFechamento["B19"] = report['Gross_Add']
+        ws_rel_fechamento["B19"] = report['Gross_Add']
     except Exception as e:
-        error_message = f"Error inserting total addition value: {e}"
+        error_message = f"Erro ao inserir valor total de acréscimos: {e}"
         print(error_message)
         st.warning(error_message)
 
-    # Insert total discount value into cell B25
     try:
-        wsRelFechamento["B25"] = report['Discounts']
+        ws_rel_fechamento["B25"] = report['Discounts']
     except Exception as e:
-        error_message = f"Error inserting total discount value: {e}"
+        error_message = f"Erro ao inserir valor total de descontos: {e}"
         print(error_message)
         st.warning(error_message)
 
-def map_other_information(wsRelFechamento, report):
-    # Map other information to specific cells
+def map_other_information(ws_rel_fechamento, report):
     mappings = {
         'Exchanged_Items': "B24",
         'Shipping': "G23",
@@ -113,72 +99,52 @@ def map_other_information(wsRelFechamento, report):
     for key, cell in mappings.items():
         try:
             if key in report:
-                wsRelFechamento[cell] = report[key]
+                ws_rel_fechamento[cell] = report[key]
         except Exception as e:
-            error_message = f"Error mapping {key}: {e}"
+            error_message = f"Erro ao mapear {key}: {e}"
             print(error_message)
             st.warning(error_message)
 
-def insert_payment_methods(wsRelFechamento, report):
-    # Insert payment methods into specific cells
-    payment_mappings = {
-        r'DINHEIRO': "G13",
-        r'QR': "G18",
-        r'CARTAO\s*CREDITO\s*PDV': "G14",
-        r'CARTAO\s*DEBITO\s*PDV': "G15",
-        r'CARTAO\s+DE\s+CREDITO': "G16",
-        r'CARTAO\s+DE\s+DEBITO': "G17",
-        r'VALE\s+FUNCIONARIO': "G21",
-        r'VOUCHER': "G20",
-        r'BOLETO': "G22"
-    }
-    for pattern, cell in payment_mappings.items():
+def insert_payment_methods(ws_rel_fechamento, report):
+    for pattern, cell in PAYMENT_MAPPINGS.items():
         try:
             if any(re.search(pattern, item) for item in report['Payment_Methods']):
                 match_item = next(item for item in report['Payment_Methods'] if re.search(pattern, item))
-                wsRelFechamento[cell] = report['Payment_Methods'][match_item]
+                ws_rel_fechamento[cell] = report['Payment_Methods'][match_item]
         except Exception as e:
-            error_message = f"Error inserting payment method {pattern}: {e}"
+            error_message = f"Erro ao inserir método de pagamento {pattern}: {e}"
             print(error_message)
             st.warning(error_message)
 
-def compare_totals(wsRelFechamento):
-    # Helper function to handle NoneType values
+def compare_totals(ws_rel_fechamento):
     def get_value(cell):
         return cell.value if cell.value is not None else 0
 
-    # Sum the gross total of terminals (B13 to B22)
-    gross_total_terminals = sum(get_value(wsRelFechamento[f"B{row}"]) for row in range(13, 23))
+    gross_total_terminals = sum(get_value(ws_rel_fechamento[f"B{row}"]) for row in range(13, 23))
+    net_sale = round(gross_total_terminals - (get_value(ws_rel_fechamento["B24"]) + get_value(ws_rel_fechamento["B25"])), 2)
 
-    # Subtract the value (B24 + B25) from the gross total of terminals and assign the result to netSale
-    netSale = round(gross_total_terminals - (get_value(wsRelFechamento["B24"]) + get_value(wsRelFechamento["B25"])), 2)
+    gross_total_payments = sum(get_value(ws_rel_fechamento[f"G{row}"]) for row in range(13, 23))
+    net_pay = round(gross_total_payments - get_value(ws_rel_fechamento["G23"]), 2)
 
-    # Sum the gross total of payments from cells G13 to G22
-    gross_total_payments = sum(get_value(wsRelFechamento[f"G{row}"]) for row in range(13, 23))
-
-    # Subtract the value of G23 from the gross total of payments and assign the result to netPay
-    netPay = round(gross_total_payments - get_value(wsRelFechamento["G23"]), 2) 
-
-    # Compare netPay and netSale
-    if netPay == netSale:
+    if net_pay == net_sale:
         st.success("Bateu! :sunglasses:")
     else:
         st.error("Divergente. Confere a tabela por favor :skull:")
 
-def sheetEdit(sheet, report, day, collect=False, changeRequested=0,cashFund=0.0):
-    wb = startNewDay(sheet, day, collect, changeRequested, cashFund)
+def sheetEdit(sheet, report, day, collect=False, change_requested=0, cash_fund=0.0):
+    wb = start_new_day(sheet, day, collect, change_requested, cash_fund)
     if wb is None:
         error_message = "Erro ao iniciar um novo dia"
         print(error_message)
         st.warning(error_message)
         return None
 
-    wsRelFechamento = wb["Rel. Fechamento de Caixa"]
+    ws_rel_fechamento = wb["Rel. Fechamento de Caixa"]
 
-    insert_terminal_values(wsRelFechamento, report)
-    insert_total_values(wsRelFechamento, report)
-    map_other_information(wsRelFechamento, report)
-    insert_payment_methods(wsRelFechamento, report)
-    compare_totals(wsRelFechamento)
+    insert_terminal_values(ws_rel_fechamento, report)
+    insert_total_values(ws_rel_fechamento, report)
+    map_other_information(ws_rel_fechamento, report)
+    insert_payment_methods(ws_rel_fechamento, report)
+    compare_totals(ws_rel_fechamento)
 
     return wb
