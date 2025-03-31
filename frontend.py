@@ -36,12 +36,6 @@ with col1:
 with col2:
     # Upload do arquivo XLSM
     xlsm_file = st.file_uploader("Faça o upload do arquivo XLSM", type=["xlsm"])
-    
-    # Observações
-    observations = None
-    add_observations = st.checkbox("Observações")
-    if add_observations:
-        observations = st.text_area("", height=100,label_visibility="collapsed")
 
 xlsm_file_download = None
 
@@ -88,7 +82,7 @@ with col3:
                 # Gerar relatório
                 report_dict = genReport(word_file)
                 # Editar planilha
-                xlsm_file_download = sheetEdit(xlsm_file, report_dict, today, collect, change_value, cash_fund, observations)
+                xlsm_file_download = sheetEdit(xlsm_file, report_dict, today, collect, change_value, cash_fund)
                 # Exibir resumo do relatório
                 display_report_summary(report_dict)
             except Exception as e:

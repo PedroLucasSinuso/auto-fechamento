@@ -145,7 +145,7 @@ def compare_totals(ws_rel_fechamento):
         st.error("Divergente. Confere a tabela por favor :skull:")
 
 # Edita a planilha com base no relatório gerado
-def sheetEdit(sheet, report, day, collect=False, change_requested=0, cash_fund=0.0, observations=None):
+def sheetEdit(sheet, report, day, collect=False, change_requested=0, cash_fund=0.0):
     wb = start_new_day(sheet, day, collect, change_requested, cash_fund)
     if wb is None:
         error_message = "Erro ao iniciar um novo dia"
@@ -160,9 +160,5 @@ def sheetEdit(sheet, report, day, collect=False, change_requested=0, cash_fund=0
     map_other_information(ws_rel_fechamento, report)
     insert_payment_methods(ws_rel_fechamento, report)
     compare_totals(ws_rel_fechamento)
-
-    # Adiciona observações na célula B30, se fornecidas
-    if observations:
-        ws_rel_fechamento["B30"] = observations
 
     return wb
