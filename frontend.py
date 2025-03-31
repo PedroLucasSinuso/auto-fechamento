@@ -36,6 +36,9 @@ with col1:
 with col2:
     # Upload do arquivo XLSM
     xlsm_file = st.file_uploader("Faça o upload do arquivo XLSM", type=["xlsm"])
+    
+    # Link "Como usar"
+    st.link_button("Como usar o App", "https://github.com/PedroLucasSinuso/auto-fechamento/tree/master#como-usar-o-aplicativo")
 
 xlsm_file_download = None
 
