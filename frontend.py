@@ -21,7 +21,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     # Upload do arquivo Word
-    word_file = st.file_uploader("Faça o upload do arquivo Word", type=["doc"])
+    word_file = st.file_uploader("Faça o upload do arquivo Word")
     
     # Coleta
     collect = st.checkbox("Coleta", value=False)
