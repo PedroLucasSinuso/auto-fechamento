@@ -125,6 +125,7 @@ cython_debug/
 
 # Output file
 output.doc
+*.ini
 
 # VSCode settings
 .vscode/
