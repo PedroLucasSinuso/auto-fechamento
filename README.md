@@ -1,9 +1,9 @@
 # auto-fechamento
 Uma forma de automatizar o fechamento geral das lojas TACO, garantindo velocidade e precisão diária para os operadores de caixa. Aplicativo de uso interno.
 
-![Rel. Fechamento caixa](https://github.com/user-attachments/assets/bcba2385-5dbd-4182-9405-40b17a68977e)
+   ![Rel. Fechamento caixa](https://github.com/user-attachments/assets/bcba2385-5dbd-4182-9405-40b17a68977e)
 
-![Saldo em caixa](https://github.com/user-attachments/assets/a50442cc-0d8f-4aa6-825f-078e7d9b2da0)
+   ![Saldo em caixa](https://github.com/user-attachments/assets/a50442cc-0d8f-4aa6-825f-078e7d9b2da0)
 
 Ambas as abas serão automaticamente preenchidas com os valores retirados do relatório do Linx Manager.
 
