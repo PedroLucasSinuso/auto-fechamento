@@ -2,3 +2,4 @@ streamlit
 openpyxl
 aspose-words
 pytz
+python-docx
